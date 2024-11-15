@@ -154,6 +154,7 @@ pub async fn load_model(
                 contents: bytemuck::cast_slice(&vertices),
                 usage: wgpu::BufferUsages::VERTEX,
             });
+
             let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some(&format!("{:?} Index Buffer", file_name)),
                 contents: bytemuck::cast_slice(&m.mesh.indices),
