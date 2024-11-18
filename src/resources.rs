@@ -30,7 +30,7 @@ pub async fn load_string(file_name: &str) -> anyhow::Result<String> {
         } else {
             let path = std::path::Path::new(env!("OUT_DIR"))
                 .join("res")
-                .join("model.vrm");
+                .join(file_name);
             let txt = path.to_str().unwrap().to_string();
         }
     }
@@ -183,14 +183,15 @@ pub async fn load_model_gltf(
     layout: &wgpu::BindGroupLayout,
 ) -> anyhow::Result<model::Model> {
     let gltf_text = load_string(file_name).await.expect("Couldn't load gltf file");
+    print!("{:?}", gltf_text);
 
     let (gltf, buffers, _) = gltf::import(gltf_text).expect("Failed to load gltf file");
 
     let mut materials = Vec::new();
+
     for material in gltf.materials() {
         println!("Looping thru materials");
         let pbr = material.pbr_metallic_roughness();
-        let base_color_texture = &pbr.base_color_texture();
         let texture_source = &pbr
             .base_color_texture()
             .map(|tex| {
@@ -202,7 +203,6 @@ pub async fn load_model_gltf(
 
         match texture_source {
             gltf::image::Source::View { view, mime_type } => {
-                print!("{:?}", buffers.len());
                 let diffuse_texture = texture::Texture::from_bytes(
                     device,
                     queue,
@@ -226,35 +226,14 @@ pub async fn load_model_gltf(
                 });
 
                 materials.push(model::Material {
-                    name: material.name().unwrap_or("Default Material").to_string(),
+                    name: material.name().unwrap().parse()?,
                     diffuse_texture,
                     bind_group,
                 });
             }
 
             gltf::image::Source::Uri { uri, mime_type } => {
-                let diffuse_texture = load_texture(uri, device, queue).await?;
-
-                let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-                    layout,
-                    entries: &[
-                        wgpu::BindGroupEntry {
-                            binding: 0,
-                            resource: wgpu::BindingResource::TextureView(&diffuse_texture.view),
-                        },
-                        wgpu::BindGroupEntry {
-                            binding: 1,
-                            resource: wgpu::BindingResource::Sampler(&diffuse_texture.sampler),
-                        },
-                    ],
-                    label: None,
-                });
-
-                materials.push(model::Material {
-                    name: material.name().unwrap_or("Default Material").to_string(),
-                    diffuse_texture,
-                    bind_group,
-                });
+                println!("Uri: {:?}", uri);
             }
         };
     }
