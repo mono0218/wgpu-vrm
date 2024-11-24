@@ -1,5 +1,6 @@
+use std::io::Cursor;
 use anyhow::*;
-use image::GenericImageView;
+use image::{GenericImageView, ImageReader};
 
 pub struct Texture {
     #[allow(unused)]
@@ -60,8 +61,10 @@ impl Texture {
         bytes: &[u8],
         label: &str,
     ) -> Result<Self> {
-        let img = image::load_from_memory(bytes)?;
-        Self::from_image(device, queue, &img, Some(label))
+        let image = image::io::Reader::open("/Users/yuuchuukanna/RustroverProjects/wgpu-hello-world/res/img.png")?
+            .with_guessed_format()?
+            .decode()?;
+        Self::from_image(device, queue, &image, Some(label))
     }
 
     pub fn from_image(

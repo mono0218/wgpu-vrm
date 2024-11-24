@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use std::ops::Range;
 
 use crate::texture;
@@ -117,7 +118,7 @@ where
     }
 
     fn draw_model(&mut self, model: &'b Model, camera_bind_group: &'b wgpu::BindGroup) {
-        self.draw_model_instanced(model, 0..1, camera_bind_group);
+        self.draw_model_instanced(model, 0..2, camera_bind_group);
     }
 
     fn draw_model_instanced(

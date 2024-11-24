@@ -175,7 +175,6 @@ pub async fn load_model(
     Ok(model::Model { meshes, materials })
 }
 
-
 pub async fn load_model_gltf(
     file_name: &str,
     device: &wgpu::Device,
@@ -183,14 +182,12 @@ pub async fn load_model_gltf(
     layout: &wgpu::BindGroupLayout,
 ) -> anyhow::Result<model::Model> {
     let gltf_text = load_string(file_name).await.expect("Couldn't load gltf file");
-    print!("{:?}", gltf_text);
 
     let (gltf, buffers, _) = gltf::import(gltf_text).expect("Failed to load gltf file");
 
     let mut materials = Vec::new();
 
     for material in gltf.materials() {
-        println!("Looping thru materials");
         let pbr = material.pbr_metallic_roughness();
         let texture_source = &pbr
             .base_color_texture()
@@ -198,8 +195,7 @@ pub async fn load_model_gltf(
                 // println!("Grabbing diffuse tex");
                 // dbg!(&tex.texture().source());
                 tex.texture().source().source()
-            })
-            .expect("texture");
+            }).unwrap();
 
         match texture_source {
             gltf::image::Source::View { view, mime_type } => {
@@ -208,7 +204,7 @@ pub async fn load_model_gltf(
                     queue,
                     &buffers[view.buffer().index()],
                     file_name,
-                ).expect("Couldn't load diffuse");
+                ).unwrap();
 
                 let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
                     layout,
@@ -298,6 +294,7 @@ pub async fn load_model_gltf(
                         contents: bytemuck::cast_slice(&vertices),
                         usage: wgpu::BufferUsages::VERTEX,
                     });
+
                     let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                         label: Some(&format!("{:?} Index Buffer", file_name)),
                         contents: bytemuck::cast_slice(&indices),
@@ -309,8 +306,7 @@ pub async fn load_model_gltf(
                         vertex_buffer,
                         index_buffer,
                         num_elements: indices.len() as u32,
-                        // material: m.mesh.material_id.unwrap_or(0),
-                        material: 0,
+                        material: primitive.material().index().unwrap_or(0),
                     });
                 });
             }

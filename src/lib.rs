@@ -233,7 +233,7 @@ struct State<'a> {
     config: wgpu::SurfaceConfiguration,
     size: winit::dpi::PhysicalSize<u32>,
     render_pipeline: wgpu::RenderPipeline,
-    obj_model: model::Model,
+    models: Vec<model::Model>,
     camera: Camera,
     camera_controller: CameraController,
     camera_uniform: CameraUniform,
@@ -271,6 +271,7 @@ impl<'a> State<'a> {
             })
             .await
             .unwrap();
+
         log::warn!("device and queue");
         let (device, queue) = adapter
             .request_device(
@@ -394,11 +395,11 @@ impl<'a> State<'a> {
             label: Some("camera_bind_group"),
         });
 
+        let mut models:Vec<model::Model> = vec![];
 
-        let obj_model =
-            resources::load_model_gltf("model.vrm", &device, &queue, &texture_bind_group_layout)
-                .await
-                .unwrap();
+        models.push(resources::load_model_gltf("model2.vrm", &device, &queue, &texture_bind_group_layout)
+            .await
+            .unwrap());
 
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("shader.wgsl"),
@@ -476,7 +477,7 @@ impl<'a> State<'a> {
             config,
             size,
             render_pipeline,
-            obj_model,
+            models,
             camera,
             camera_controller,
             camera_buffer,
@@ -562,11 +563,14 @@ impl<'a> State<'a> {
 
             render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
             render_pass.set_pipeline(&self.render_pipeline);
-            render_pass.draw_model_instanced(
-                &self.obj_model,
-                0..self.instances.len() as u32,
-                &self.camera_bind_group,
-            );
+
+            let _ = &self.models.iter().for_each(|model| {
+                render_pass.draw_model_instanced(
+                    model,
+                    0..self.instances.len() as u32,
+                    &self.camera_bind_group,
+                );
+            });
         }
 
         self.queue.submit(iter::once(encoder.finish()));
